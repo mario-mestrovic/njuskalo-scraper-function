@@ -1,25 +1,24 @@
-﻿using Library.Njuskalo;
-using Microsoft.Azure.WebJobs.Host;
-using System;
+﻿using Microsoft.Extensions.Logging;
 
 namespace Njuskalo.App.Function
 {
-    public class DelegateLogger : ILogger
+    public class DelegateLogger : Library.Njuskalo.ILogger
     {
-        private readonly TraceWriter _log;
+        private readonly ILogger _logger;
 
-        public DelegateLogger(TraceWriter log)
+        public DelegateLogger(ILogger logger)
         {
-            _log = log;
+            _logger = logger;
         }
 
         public void WriteLine()
         {
-            // do nothing
+            WriteLine(null);
+
         }
         public void WriteLine(string value)
         {
-            _log.Info(value);
+            if (value != null) _logger.LogInformation(value);
         }
     }
 }

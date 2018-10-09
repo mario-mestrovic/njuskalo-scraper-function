@@ -2,6 +2,7 @@ using Library.Email;
 using Library.Njuskalo;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
@@ -14,9 +15,9 @@ namespace Njuskalo.App.Function
     public static class NjuskaloScrapeFunction
     {
         [FunctionName("NjuskaloScrapeFunction")]
-        public static async Task Run([TimerTrigger("0 */3 * * * *")]TimerInfo myTimer, ExecutionContext context, TraceWriter log)
+        public static async Task RunAsync([TimerTrigger("0 */3 * * * *")]TimerInfo myTimer, ExecutionContext context, Microsoft.Extensions.Logging.ILogger log)
         {
-            log.Info($"C# Timer trigger function executed at: {DateTime.Now}");
+            log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
 
             var sendgridMailSenderOptions = new SendgridMailSenderOptions
             {
@@ -34,18 +35,24 @@ namespace Njuskalo.App.Function
                 Emails = Environment.GetEnvironmentVariable("NJ_Emails")
             };
 
-            await ProcessScrapeAndNotifyAsync(sendgridMailSenderOptions, njuskaloNotifierOptions, njuskaloStoreOptions, log);
+            try
+            {
+                await ProcessScrapeAndNotifyAsync(sendgridMailSenderOptions, njuskaloNotifierOptions, njuskaloStoreOptions, log);
+            }
+            catch (Exception exception)
+            {
+                log.LogError(default(EventId), exception, exception.Message);
+            }
         }
 
 
-        private static async Task ProcessScrapeAndNotifyAsync(SendgridMailSenderOptions sendgridMailSenderOptions, NjuskaloNotifierOptions njuskaloNotifierOptions, NjuskaloStoreOptions njuskaloStoreOptions, TraceWriter log)
+        private static async Task ProcessScrapeAndNotifyAsync(SendgridMailSenderOptions sendgridMailSenderOptions, NjuskaloNotifierOptions njuskaloNotifierOptions, NjuskaloStoreOptions njuskaloStoreOptions, Microsoft.Extensions.Logging.ILogger log)
         {
             var client = new HttpClient();
             var logger = new DelegateLogger(log);
             var emailSender = new SendgridMailSender(Options.Create(sendgridMailSenderOptions));
             var notifier = new NjuskaloNotifier(Options.Create(njuskaloNotifierOptions), emailSender);
             var store = new NjuskaloStore(Options.Create(njuskaloStoreOptions));
-
 
             var t2 = ScraperFactory.CreateNjuskaloDvosobniScraper(client, logger).ScrapeAsync();
             var t3 = ScraperFactory.CreateNjuskaloTrosobniScraper(client, logger).ScrapeAsync();
@@ -69,6 +76,5 @@ namespace Njuskalo.App.Function
                 }
             }
         }
-
     }
 }

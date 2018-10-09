@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Library.Njuskalo", "Library
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Njuskalo.App.Console", "Njuskalo.App.Console\Njuskalo.App.Console.csproj", "{53CCAD95-1731-41BB-A9E5-9D814B858346}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Njuskalo.App.Function", "Njuskalo.App.Function\Njuskalo.App.Function.csproj", "{5FFD7ABD-2C19-412D-A426-4D2BCB71A54F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Njuskalo.App.Function", "Njuskalo.App.Function\Njuskalo.App.Function.csproj", "{4BE366C6-AAD0-4040-B2D7-563AF512B890}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,10 +29,10 @@ Global
 		{53CCAD95-1731-41BB-A9E5-9D814B858346}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{53CCAD95-1731-41BB-A9E5-9D814B858346}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{53CCAD95-1731-41BB-A9E5-9D814B858346}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5FFD7ABD-2C19-412D-A426-4D2BCB71A54F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5FFD7ABD-2C19-412D-A426-4D2BCB71A54F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5FFD7ABD-2C19-412D-A426-4D2BCB71A54F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5FFD7ABD-2C19-412D-A426-4D2BCB71A54F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4BE366C6-AAD0-4040-B2D7-563AF512B890}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4BE366C6-AAD0-4040-B2D7-563AF512B890}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4BE366C6-AAD0-4040-B2D7-563AF512B890}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4BE366C6-AAD0-4040-B2D7-563AF512B890}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
