@@ -1,14 +1,13 @@
+using Library.Email;
+using Library.Njuskalo;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Library.Email;
-using Library.Njuskalo;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 
 namespace Njuskalo.App.Function
 {
@@ -19,26 +18,20 @@ namespace Njuskalo.App.Function
         {
             log.Info($"C# Timer trigger function executed at: {DateTime.Now}");
 
-            var configuration = new ConfigurationBuilder()
-                  .SetBasePath(context.FunctionAppDirectory)
-                  .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
-                  .AddEnvironmentVariables()
-                  .Build();
-
             var sendgridMailSenderOptions = new SendgridMailSenderOptions
             {
-                ApiKey = configuration.GetSection("SendgridMailSenderOptions").GetValue<string>("ApiKey"),
-                EmailSender = configuration.GetSection("SendgridMailSenderOptions").GetValue<string>("EmailSender"),
+                ApiKey = Environment.GetEnvironmentVariable("SG_ApiKey"),
+                EmailSender = Environment.GetEnvironmentVariable("SG_EmailSender"),
             };
             var njuskaloStoreOptions = new NjuskaloStoreOptions
             {
-                StorageName = configuration.GetSection("NjuskaloStoreOptions").GetValue<string>("StorageName"),
-                StorageKey = configuration.GetSection("NjuskaloStoreOptions").GetValue<string>("StorageKey"),
-                TableName = configuration.GetSection("NjuskaloStoreOptions").GetValue<string>("TableName")
+                StorageName = Environment.GetEnvironmentVariable("NJ_StorageName"),
+                StorageKey = Environment.GetEnvironmentVariable("NJ_StorageKey"),
+                TableName = Environment.GetEnvironmentVariable("NJ_TableName")
             };
             var njuskaloNotifierOptions = new NjuskaloNotifierOptions
             {
-                Emails = configuration.GetSection("NjuskaloNotifierOptions").GetValue<string>("Emails")
+                Emails = Environment.GetEnvironmentVariable("NJ_Emails")
             };
 
             await ProcessScrapeAndNotifyAsync(sendgridMailSenderOptions, njuskaloNotifierOptions, njuskaloStoreOptions, log);
@@ -59,17 +52,20 @@ namespace Njuskalo.App.Function
 
             await Task.WhenAll(t2, t3);
             var entities = new HashSet<string>(t2.Result.Union(t3.Result));
+            logger.WriteLine($"Found {entities.Count} entities.");
 
             await store.InitStorageAsync();
             await store.PersistAsync(entities, "njuskalo.hr");
 
             var toNotify = await store.GetUnnotifiedAsync("njuskalo.hr");
+            logger.WriteLine($"To notify: {toNotify.Count}.");
             if (toNotify.Any())
             {
                 var success = await notifier.NotifyAboutEntitiesAsync(toNotify);
                 if (success)
                 {
                     await store.MarkNotifiedAsync(toNotify, "njuskalo.hr");
+                    logger.WriteLine($"Notified about {toNotify.Count} entities.");
                 }
             }
         }
