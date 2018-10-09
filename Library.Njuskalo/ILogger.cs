@@ -1,4 +1,4 @@
-﻿namespace NjuskaloScrapeConsole
+﻿namespace Library.Njuskalo
 {
     public interface ILogger
     {

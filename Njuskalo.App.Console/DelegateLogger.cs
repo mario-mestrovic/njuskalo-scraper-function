@@ -1,6 +1,7 @@
-﻿using System;
+﻿using Library.Njuskalo;
+using System;
 
-namespace NjuskaloScrapeConsole
+namespace Njuskalo.App.Console
 {
     public class DelegateLogger : ILogger
     {
@@ -14,6 +15,7 @@ namespace NjuskaloScrapeConsole
         public void WriteLine()
         {
             WriteLine(null);
+
         }
         public void WriteLine(string value)
         {

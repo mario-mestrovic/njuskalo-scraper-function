@@ -5,7 +5,7 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace NjuskaloScrapeConsole
+namespace Library.Njuskalo
 {
     public class NjuskaloScraper
     {
@@ -27,11 +27,9 @@ namespace NjuskaloScrapeConsole
 
         public async Task<ICollection<string>> ScrapeAsync()
         {
-            _logger.WriteLine("Started scraping...");
-
+            _logger.WriteLine("Scraping started...");
 
             var entities = new HashSet<string>();
-
             var continueNextPage = _scrapeAllPages;
             var page = 1;
             while (page == 1 || continueNextPage)
@@ -55,10 +53,15 @@ namespace NjuskaloScrapeConsole
                 _logger.WriteLine();
             }
 
+            _logger.WriteLine(entities.Any() ? $"Total {entities.Count} results:" : "No results found.");
             foreach (var url in entities)
             {
                 _logger.WriteLine(url);
             }
+
+            _logger.WriteLine();
+            _logger.WriteLine("Scraping finished.");
+
 
             return entities;
         }
@@ -92,19 +95,22 @@ namespace NjuskaloScrapeConsole
             if (html.Contains("Trenutno nema oglasa koji zadovoljavaju postavljene kriterije pretrage."))
                 return entities;
 
-            var focusRegex = new Regex("EntityList--ListItemRegularAd[^>]*>(.*)adsense_adlist_bottom[^>]*>", RegexOptions.Singleline);
-            var entityRegex = new Regex("<li class=\"EntityList-item[^>]*?data-href=\"([^\"]*)\"");
+            //var focusRegex = new Regex("EntityList--ListItemRegularAd[^>]*>(.*)adsense_adlist_bottom[^>]*>", RegexOptions.Singleline);
+            var entityVauVauRegex = new Regex("<li class=\"EntityList-item EntityList-item--VauVau[^>]*?data-href=\"([^\"]*)\"");
+            var entityRegularRegex = new Regex("<li class=\"EntityList-item EntityList-item--Regular[^>]*?data-href=\"([^\"]*)\"");
 
-            //extract just the meaningful part where regular adds are
-            var focusMatch = focusRegex.Match(html);
-            if (!focusMatch.Success)
-                return entities;
+            ////extract just the meaningful part where regular adds are
+            //var focusMatch = focusRegex.Match(html);
+            //if (!focusMatch.Success)
+            //    return entities;
 
-            //focus on the part where results should be
-            html = focusMatch.Value;
+            ////focus on the part where results should be
+            //html = focusMatch.Value;
 
-            var matches = entityRegex.Matches(html);
-            foreach (Match match in matches)
+            var matchesVauVau = entityVauVauRegex.Matches(html);
+            var matchesRegular = entityRegularRegex.Matches(html);
+
+            foreach (Match match in matchesRegular.OfType<Match>().Union(matchesRegular.OfType<Match>()))
             {
                 if (!match.Success) continue;
                 var url = match.Groups[1].Value;
