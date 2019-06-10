@@ -36,36 +36,40 @@ namespace Njuskalo.App.Console
             {
                 StorageName = configuration.GetSection("NjuskaloStoreOptions").GetValue<string>("StorageName"),
                 StorageKey = configuration.GetSection("NjuskaloStoreOptions").GetValue<string>("StorageKey"),
-                TableName = configuration.GetSection("NjuskaloStoreOptions").GetValue<string>("TableName")
+                TableName = configuration.GetSection("NjuskaloStoreOptions").GetValue<string>("TableName"),
+                PartitionKey = configuration.GetSection("NjuskaloStoreOptions").GetValue<string>("PartitionKey"),
             };
             var njuskaloNotifierOptions = new NjuskaloNotifierOptions
             {
                 Emails = configuration.GetSection("NjuskaloNotifierOptions").GetValue<string>("Emails")
             };
 
-            var client = new HttpClient();
-            var logger = new DelegateLogger(WriteLine);
-            var emailSender = new SendgridMailSender(Options.Create(sendgridMailSenderOptions));
-            var notifier = new NjuskaloNotifier(Options.Create(njuskaloNotifierOptions), emailSender);
-            var store = new NjuskaloStore(Options.Create(njuskaloStoreOptions));
-
-
-            var t2 = ScraperFactory.CreateNjuskaloDvosobniScraper(client, logger).ScrapeAsync();
-            var t3 = ScraperFactory.CreateNjuskaloTrosobniScraper(client, logger).ScrapeAsync();
-
-            await Task.WhenAll(t2, t3);
-            var entities = new HashSet<string>(t2.Result.Union(t3.Result));
-
-            await store.InitStorageAsync();
-            await store.PersistAsync(entities, "njuskalo.hr");
-
-            var toNotify = await store.GetUnnotifiedAsync("njuskalo.hr");
-            if (toNotify.Any())
+            using (var client = new HttpClient())
             {
-                var success = await notifier.NotifyAboutEntitiesAsync(toNotify);
-                if (success)
+                var logger = new DelegateLogger(WriteLine);
+                var emailSender = new SendgridMailSender(Options.Create(sendgridMailSenderOptions));
+                var notifier = new NjuskaloNotifier(Options.Create(njuskaloNotifierOptions), emailSender);
+                var store = new NjuskaloStore(Options.Create(njuskaloStoreOptions));
+
+
+                var t2 = ScraperFactory.CreateNjuskaloDvosobniScraper(client, logger).ScrapeAsync();
+                var t3 = ScraperFactory.CreateNjuskaloTrosobniScraper(client, logger).ScrapeAsync();
+                var t4 = ScraperFactory.CreateNjuskaloCetverosobniScraper(client, logger).ScrapeAsync();
+
+                await Task.WhenAll(t2, t3, t4);
+                var entities = new HashSet<string>(t2.Result.Union(t3.Result));
+
+                await store.InitStorageAsync();
+                await store.PersistAsync(entities);
+
+                var toNotify = await store.GetUnnotifiedAsync();
+                if (toNotify.Any())
                 {
-                    await store.MarkNotifiedAsync(toNotify, "njuskalo.hr");
+                    var success = await notifier.NotifyAboutEntitiesAsync(toNotify, store.PartitionKey);
+                    if (success)
+                    {
+                        await store.MarkNotifiedAsync(toNotify);
+                    }
                 }
             }
         }

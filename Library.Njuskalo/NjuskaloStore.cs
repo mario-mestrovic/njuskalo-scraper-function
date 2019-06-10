@@ -11,10 +11,11 @@ namespace Library.Njuskalo
     public class NjuskaloStore
     {
         private readonly NjuskaloStoreOptions _options;
-
         private readonly CloudStorageAccount _storageAccount;
         private readonly CloudTableClient _tableClient;
         private readonly CloudTable _table;
+
+        public string PartitionKey => _options.PartitionKey;
 
         public NjuskaloStore(IOptions<NjuskaloStoreOptions> options)
         {
@@ -30,18 +31,18 @@ namespace Library.Njuskalo
             await _table.CreateIfNotExistsAsync();
         }
 
-        public async Task PersistAsync(ICollection<string> entities, string partitionKey)
+        public async Task PersistAsync(ICollection<string> entities)
         {
             var batch = new TableBatchOperation();
             foreach (var url in entities)
             {
                 var rowKey = GetRowKey(url);
-                var row = await _table.ExecuteAsync(TableOperation.Retrieve(partitionKey, rowKey, new List<string>()));
+                var row = await _table.ExecuteAsync(TableOperation.Retrieve(PartitionKey, rowKey, new List<string>()));
                 if (row.Result == null)
                 {
                     var persistedEntity = new PersistedEntity
                     {
-                        PartitionKey = partitionKey,
+                        PartitionKey = PartitionKey,
                         RowKey = rowKey,
                         Url = url,
                         Notified = false
@@ -56,14 +57,14 @@ namespace Library.Njuskalo
             }
         }
 
-        public async Task MarkNotifiedAsync(ICollection<string> entities, string partitionKey)
+        public async Task MarkNotifiedAsync(ICollection<string> entities)
         {
             var batch = new TableBatchOperation();
             foreach (var url in entities)
             {
                 var persistedEntity = new PersistedEntity
                 {
-                    PartitionKey = partitionKey,
+                    PartitionKey = PartitionKey,
                     RowKey = GetRowKey(url),
                     Url = url,
                     Notified = true
@@ -77,10 +78,10 @@ namespace Library.Njuskalo
             }
         }
 
-        public async Task<ICollection<string>> GetUnnotifiedAsync(string partitionKey)
+        public async Task<ICollection<string>> GetUnnotifiedAsync()
         {
             var entityFilter = TableQuery.CombineFilters(
-                TableQuery.GenerateFilterCondition(nameof(PersistedEntity.PartitionKey), QueryComparisons.Equal, partitionKey),
+                TableQuery.GenerateFilterCondition(nameof(PersistedEntity.PartitionKey), QueryComparisons.Equal, PartitionKey),
                 TableOperators.And,
                 TableQuery.GenerateFilterConditionForBool(nameof(PersistedEntity.Notified), QueryComparisons.NotEqual, true));
 

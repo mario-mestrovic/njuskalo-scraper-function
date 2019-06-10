@@ -10,7 +10,7 @@ namespace Library.Njuskalo
             var queryParams = new Dictionary<string, string>();
             queryParams["locationId"] = "2814";
             queryParams["price[min]"] = "250";
-            queryParams["price[max]"] = "550";
+            queryParams["price[max]"] = "670";
             queryParams["roomCountId"] = "189"; //2-2.5 soba
 
             var scraper = new NjuskaloScraper(client, logger, "iznajmljivanje-stanova", queryParams, true);
@@ -22,7 +22,7 @@ namespace Library.Njuskalo
             var queryParams = new Dictionary<string, string>();
             queryParams["locationId"] = "2814"; //tresnjevka
             queryParams["price[min]"] = "250";
-            queryParams["price[max]"] = "550";
+            queryParams["price[max]"] = "670";
             queryParams["roomCountId"] = "190"; //3-3.5 soba
 
             var scraper = new NjuskaloScraper(client, logger, "iznajmljivanje-stanova", queryParams, true);
@@ -33,7 +33,7 @@ namespace Library.Njuskalo
             var queryParams = new Dictionary<string, string>();
             queryParams["locationId"] = "2814"; //tresnjevka
             queryParams["price[min]"] = "250";
-            queryParams["price[max]"] = "550";
+            queryParams["price[max]"] = "670";
             queryParams["roomCountId"] = "191"; //4+ soba
 
             var scraper = new NjuskaloScraper(client, logger, "iznajmljivanje-stanova", queryParams, true);

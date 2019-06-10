@@ -18,8 +18,13 @@ namespace Library.Njuskalo
             _emailSender = emailSender;
         }
 
-        public async Task<bool> NotifyAboutEntitiesAsync(ICollection<string> entities)
+        public async Task<bool> NotifyAboutEntitiesAsync(ICollection<string> entities, string subjectContext)
         {
+            if (entities == null)
+                throw new ArgumentNullException(nameof(entities));
+            if (string.IsNullOrEmpty(subjectContext))
+                throw new ArgumentNullException(nameof(subjectContext));
+
             var sb = new StringBuilder();
             sb.AppendLine($"<p>Hi!<br/>Found {entities.Count} new ads:</p>");
             foreach (var url in entities)
@@ -30,7 +35,7 @@ namespace Library.Njuskalo
             var nzTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
             var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, nzTimeZone);
 
-            var subject = $"[njuskalo] {nowLocal.ToString("yyyy-MM-dd HH:mm")} Found {entities.Count} ads.";
+            var subject = $"[{subjectContext}] {nowLocal.ToString("yyyy-MM-dd HH:mm")} Found {entities.Count} ads.";
             return await _emailSender.SendAsync(_options.GetEmails(), subject, sb.ToString(), true);
         }
     }

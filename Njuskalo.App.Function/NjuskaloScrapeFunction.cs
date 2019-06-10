@@ -1,7 +1,6 @@
 using Library.Email;
 using Library.Njuskalo;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -15,7 +14,7 @@ namespace Njuskalo.App.Function
     public static class NjuskaloScrapeFunction
     {
         [FunctionName("NjuskaloScrapeFunction")]
-        public static async Task RunAsync([TimerTrigger("0 */3 * * * *")]TimerInfo myTimer, ExecutionContext context, Microsoft.Extensions.Logging.ILogger log)
+        public static async Task RunAsync([TimerTrigger("%NJ_Timer%")]TimerInfo myTimer, ExecutionContext context, Microsoft.Extensions.Logging.ILogger log)
         {
             log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
 
@@ -28,7 +27,8 @@ namespace Njuskalo.App.Function
             {
                 StorageName = Environment.GetEnvironmentVariable("NJ_StorageName"),
                 StorageKey = Environment.GetEnvironmentVariable("NJ_StorageKey"),
-                TableName = Environment.GetEnvironmentVariable("NJ_TableName")
+                TableName = Environment.GetEnvironmentVariable("NJ_TableName"),
+                PartitionKey = Environment.GetEnvironmentVariable("NJ_StoragePartitionKey")
             };
             var njuskaloNotifierOptions = new NjuskaloNotifierOptions
             {
@@ -56,22 +56,23 @@ namespace Njuskalo.App.Function
 
             var t2 = ScraperFactory.CreateNjuskaloDvosobniScraper(client, logger).ScrapeAsync();
             var t3 = ScraperFactory.CreateNjuskaloTrosobniScraper(client, logger).ScrapeAsync();
+            var t4 = ScraperFactory.CreateNjuskaloCetverosobniScraper(client, logger).ScrapeAsync();
 
-            await Task.WhenAll(t2, t3);
+            await Task.WhenAll(t2, t3, t4);
             var entities = new HashSet<string>(t2.Result.Union(t3.Result));
             logger.WriteLine($"Found {entities.Count} entities.");
 
             await store.InitStorageAsync();
-            await store.PersistAsync(entities, "njuskalo.hr");
+            await store.PersistAsync(entities);
 
-            var toNotify = await store.GetUnnotifiedAsync("njuskalo.hr");
+            var toNotify = await store.GetUnnotifiedAsync();
             logger.WriteLine($"To notify: {toNotify.Count}.");
             if (toNotify.Any())
             {
-                var success = await notifier.NotifyAboutEntitiesAsync(toNotify);
+                var success = await notifier.NotifyAboutEntitiesAsync(toNotify, store.PartitionKey);
                 if (success)
                 {
-                    await store.MarkNotifiedAsync(toNotify, "njuskalo.hr");
+                    await store.MarkNotifiedAsync(toNotify);
                     logger.WriteLine($"Notified about {toNotify.Count} entities.");
                 }
             }
