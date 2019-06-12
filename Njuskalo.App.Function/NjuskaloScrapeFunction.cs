@@ -54,12 +54,14 @@ namespace Njuskalo.App.Function
             var notifier = new NjuskaloNotifier(Options.Create(njuskaloNotifierOptions), emailSender);
             var store = new NjuskaloStore(Options.Create(njuskaloStoreOptions));
 
-            var t2 = ScraperFactory.CreateNjuskaloDvosobniScraper(client, logger).ScrapeAsync();
+            //var t2 = ScraperFactory.CreateNjuskaloDvosobniScraper(client, logger).ScrapeAsync();
             var t3 = ScraperFactory.CreateNjuskaloTrosobniScraper(client, logger).ScrapeAsync();
             var t4 = ScraperFactory.CreateNjuskaloCetverosobniScraper(client, logger).ScrapeAsync();
 
-            await Task.WhenAll(t2, t3, t4);
-            var entities = new HashSet<string>(t2.Result.Union(t3.Result));
+            var scrapeTasks = new List<Task<ICollection<string>>> { t3, t4 };
+            await Task.WhenAll(scrapeTasks);
+
+            var entities = new HashSet<string>(scrapeTasks.SelectMany(x => x.Result));
             logger.WriteLine($"Found {entities.Count} entities.");
 
             await store.InitStorageAsync();
