@@ -14,7 +14,7 @@ namespace Njuskalo.App.Function
     public static class NjuskaloScrapeFunction
     {
         [FunctionName("NjuskaloScrapeFunction")]
-        public static async Task RunAsync([TimerTrigger("%NJ_Timer%")]TimerInfo myTimer, ExecutionContext context, Microsoft.Extensions.Logging.ILogger log)
+        public static async Task RunAsync([TimerTrigger("%NJ_Timer%", RunOnStartup = true)]TimerInfo myTimer, ExecutionContext context, Microsoft.Extensions.Logging.ILogger log)
         {
             log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
 
@@ -54,11 +54,10 @@ namespace Njuskalo.App.Function
             var notifier = new NjuskaloNotifier(Options.Create(njuskaloNotifierOptions), emailSender);
             var store = new NjuskaloStore(Options.Create(njuskaloStoreOptions));
 
-            //var t2 = ScraperFactory.CreateNjuskaloDvosobniScraper(client, logger).ScrapeAsync();
-            var t3 = ScraperFactory.CreateNjuskaloTrosobniScraper(client, logger).ScrapeAsync();
-            var t4 = ScraperFactory.CreateNjuskaloCetverosobniScraper(client, logger).ScrapeAsync();
+            var t2 = ScraperFactory.CreateNjuskaloDvosobniMin50KvadrataScraper(client, logger).ScrapeAsync();
+            var t3 = ScraperFactory.CreateNjuskaloMinimalnoTrosobniScraper(client, logger).ScrapeAsync();
 
-            var scrapeTasks = new List<Task<ICollection<string>>> { t3, t4 };
+            var scrapeTasks = new List<Task<ICollection<string>>> { t2, t3 };
             await Task.WhenAll(scrapeTasks);
 
             var entities = new HashSet<string>(scrapeTasks.SelectMany(x => x.Result));
