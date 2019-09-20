@@ -57,7 +57,7 @@ namespace Library.Njuskalo
             }
 
             _logger.WriteLine();
-            _logger.WriteLine("[{_options.Name}] Scraping finished.");
+            _logger.WriteLine($"[{_options.Name}] Scraping finished.");
 
 
             return entities;
@@ -72,12 +72,12 @@ namespace Library.Njuskalo
                 .AppendPathSegment(_options.PathSegment)
                 .SetQueryParams(pageQueryParams);
 
-            _logger.WriteLine($"GET: {requestUrl}");
+            _logger.WriteLine($"[{_options.Name}] GET: {requestUrl}");
 
             var response = await _client.GetAsync(requestUrl);
             if (!response.IsSuccessStatusCode)
             {
-                _logger.WriteLine($"GET failed with status code: {response.StatusCode}");
+                _logger.WriteLine($"[{_options.Name}] GET failed with status code: {response.StatusCode}");
                 return null;
             }
 
