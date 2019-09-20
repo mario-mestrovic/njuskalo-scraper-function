@@ -1,4 +1,6 @@
 ﻿using Flurl;
+using Microsoft.Extensions.Options;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -9,43 +11,38 @@ namespace Library.Njuskalo
 {
     public class NjuskaloScraper
     {
+        private readonly NjuskaloScraperOptions _options;
         private readonly HttpClient _client;
         private readonly ILogger _logger;
-        private readonly string _baseUrl = "https://www.njuskalo.hr";
-        private readonly string _pathSegment;
-        private readonly IDictionary<string, string> _queryParams;
-        private readonly bool _scrapeAllPages;
 
-        public NjuskaloScraper(HttpClient client, ILogger logger, string pathSegment, IDictionary<string, string> queryParams, bool scrapeAllPages)
+        public NjuskaloScraper(IOptions<NjuskaloScraperOptions> options, HttpClient client, ILogger logger)
         {
             _client = client;
             _logger = logger;
-            _pathSegment = pathSegment;
-            _queryParams = queryParams;
-            _scrapeAllPages = scrapeAllPages;
+            _options = options.Value ?? throw new ArgumentNullException();
         }
 
         public async Task<ICollection<string>> ScrapeAsync()
         {
-            _logger.WriteLine("Scraping started...");
+            _logger.WriteLine($"[{_options.Name}] Scraping started...");
 
             var entities = new HashSet<string>();
-            var continueNextPage = _scrapeAllPages;
+            var continueNextPage = _options.ScrapeAllPages;
             var page = 1;
             while (page == 1 || continueNextPage)
             {
-                _logger.WriteLine($"Page: {page}. STARTED.");
+                _logger.WriteLine($"[{_options.Name}] Page: {page}. STARTED.");
                 var html = await GetResultPageHtmlAsync(page);
 
                 var pageEntities = ExtractEntitiesFromList(html);
                 if (!pageEntities.Any())
                 {
                     continueNextPage = false;
-                    _logger.WriteLine($"Page: {page}. Nothing found.");
+                    _logger.WriteLine($"[{_options.Name}] Page: {page}. Nothing found.");
                 }
                 else
                 {
-                    _logger.WriteLine($"Page: {page}. Found {pageEntities.Count} items.");
+                    _logger.WriteLine($"[{_options.Name}] Page: {page}. Found {pageEntities.Count} items.");
                 }
 
                 entities.UnionWith(pageEntities);
@@ -53,14 +50,14 @@ namespace Library.Njuskalo
                 _logger.WriteLine();
             }
 
-            _logger.WriteLine(entities.Any() ? $"Total {entities.Count} results:" : "No results found.");
+            _logger.WriteLine(entities.Any() ? $"[{_options.Name}] Total {entities.Count} results:" : "No results found.");
             foreach (var url in entities)
             {
                 _logger.WriteLine(url);
             }
 
             _logger.WriteLine();
-            _logger.WriteLine("Scraping finished.");
+            _logger.WriteLine("[{_options.Name}] Scraping finished.");
 
 
             return entities;
@@ -68,11 +65,11 @@ namespace Library.Njuskalo
 
         private async Task<string> GetResultPageHtmlAsync(int? page)
         {
-            var pageQueryParams = new Dictionary<string, string>(_queryParams);
+            var pageQueryParams = new Dictionary<string, string>(_options.QueryParams);
             if (page.HasValue()) pageQueryParams["page"] = page.ToString();
 
-            var requestUrl = _baseUrl
-                .AppendPathSegment(_pathSegment)
+            var requestUrl = _options.BaseUrl
+                .AppendPathSegment(_options.PathSegment)
                 .SetQueryParams(pageQueryParams);
 
             _logger.WriteLine($"GET: {requestUrl}");
@@ -116,7 +113,7 @@ namespace Library.Njuskalo
                 var url = match.Groups[1].Value;
                 if (string.IsNullOrWhiteSpace(url) || url == "/") continue;
 
-                url = FullyQualifyUrl(_baseUrl, url);
+                url = FullyQualifyUrl(_options.BaseUrl, url);
                 entities.Add(url);
             }
             return entities;

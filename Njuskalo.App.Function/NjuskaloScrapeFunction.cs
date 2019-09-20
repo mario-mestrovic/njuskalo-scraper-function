@@ -18,26 +18,19 @@ namespace Njuskalo.App.Function
         {
             log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
 
-            var sendgridMailSenderOptions = new SendgridMailSenderOptions
+            var mailSenderOptions = OptionsFactory.CreateSendgridMailSenderOptions();
+            var storeOptions = OptionsFactory.CreateNjuskaloStoreOptions();
+            var notifierOptions = OptionsFactory.CreateNjuskaloNotifierOptions();
+            var scraperOptions = OptionsFactory.CreateNjuskaloScraperOptions();
+            if (!scraperOptions.Any())
             {
-                ApiKey = Environment.GetEnvironmentVariable("SG_ApiKey"),
-                EmailSender = Environment.GetEnvironmentVariable("SG_EmailSender"),
-            };
-            var njuskaloStoreOptions = new NjuskaloStoreOptions
-            {
-                StorageName = Environment.GetEnvironmentVariable("NJ_StorageName"),
-                StorageKey = Environment.GetEnvironmentVariable("NJ_StorageKey"),
-                TableName = Environment.GetEnvironmentVariable("NJ_TableName"),
-                PartitionKey = Environment.GetEnvironmentVariable("NJ_StoragePartitionKey")
-            };
-            var njuskaloNotifierOptions = new NjuskaloNotifierOptions
-            {
-                Emails = Environment.GetEnvironmentVariable("NJ_Emails")
-            };
+                log.LogError("Scraper options are not configured.");
+                return;
+            }
 
             try
             {
-                await ProcessScrapeAndNotifyAsync(sendgridMailSenderOptions, njuskaloNotifierOptions, njuskaloStoreOptions, log);
+                await ProcessScrapeAndNotifyAsync(mailSenderOptions, notifierOptions, storeOptions, scraperOptions, log);
             }
             catch (Exception exception)
             {
@@ -46,35 +39,39 @@ namespace Njuskalo.App.Function
         }
 
 
-        private static async Task ProcessScrapeAndNotifyAsync(SendgridMailSenderOptions sendgridMailSenderOptions, NjuskaloNotifierOptions njuskaloNotifierOptions, NjuskaloStoreOptions njuskaloStoreOptions, Microsoft.Extensions.Logging.ILogger log)
+        private static async Task ProcessScrapeAndNotifyAsync(SendgridMailSenderOptions sendgridMailSenderOptions, NjuskaloNotifierOptions njuskaloNotifierOptions, NjuskaloStoreOptions njuskaloStoreOptions, ICollection<NjuskaloScraperOptions> scraperOptions, Microsoft.Extensions.Logging.ILogger log)
         {
-            var client = new HttpClient();
-            var logger = new DelegateLogger(log);
-            var emailSender = new SendgridMailSender(Options.Create(sendgridMailSenderOptions));
-            var notifier = new NjuskaloNotifier(Options.Create(njuskaloNotifierOptions), emailSender);
-            var store = new NjuskaloStore(Options.Create(njuskaloStoreOptions));
-
-            var t2 = ScraperFactory.CreateNjuskaloDvosobniMin50KvadrataScraper(client, logger).ScrapeAsync();
-            var t3 = ScraperFactory.CreateNjuskaloMinimalnoTrosobniScraper(client, logger).ScrapeAsync();
-
-            var scrapeTasks = new List<Task<ICollection<string>>> { t2, t3 };
-            await Task.WhenAll(scrapeTasks);
-
-            var entities = new HashSet<string>(scrapeTasks.SelectMany(x => x.Result));
-            logger.WriteLine($"Found {entities.Count} entities.");
-
-            await store.InitStorageAsync();
-            await store.PersistAsync(entities);
-
-            var toNotify = await store.GetUnnotifiedAsync();
-            logger.WriteLine($"To notify: {toNotify.Count}.");
-            if (toNotify.Any())
+            using (var client = new HttpClient())
             {
-                var success = await notifier.NotifyAboutEntitiesAsync(toNotify, store.PartitionKey);
-                if (success)
+                var logger = new DelegateLogger(log);
+                var emailSender = new SendgridMailSender(Options.Create(sendgridMailSenderOptions));
+                var notifier = new NjuskaloNotifier(Options.Create(njuskaloNotifierOptions), emailSender);
+                var store = new NjuskaloStore(Options.Create(njuskaloStoreOptions));
+
+                var scrapeTasks = new List<Task<ICollection<string>>>();
+                foreach (var options in scraperOptions)
                 {
-                    await store.MarkNotifiedAsync(toNotify);
-                    logger.WriteLine($"Notified about {toNotify.Count} entities.");
+                    var scraper = new NjuskaloScraper(Options.Create(options), client, logger);
+                    scrapeTasks.Add(scraper.ScrapeAsync());
+                }
+                await Task.WhenAll(scrapeTasks);
+
+                var entities = new HashSet<string>(scrapeTasks.SelectMany(x => x.Result));
+                logger.WriteLine($"Found {entities.Count} entities.");
+
+                await store.InitStorageAsync();
+                await store.PersistAsync(entities);
+
+                var toNotify = await store.GetUnnotifiedAsync();
+                logger.WriteLine($"To notify: {toNotify.Count}.");
+                if (toNotify.Any())
+                {
+                    var success = await notifier.NotifyAboutEntitiesAsync(toNotify, store.PartitionKey);
+                    if (success)
+                    {
+                        await store.MarkNotifiedAsync(toNotify);
+                        logger.WriteLine($"Notified about {toNotify.Count} entities.");
+                    }
                 }
             }
         }

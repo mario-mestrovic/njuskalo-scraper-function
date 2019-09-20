@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.Extensions.Options;
+using System.Collections.Generic;
 using System.Net.Http;
 
 namespace Library.Njuskalo
@@ -14,7 +15,14 @@ namespace Library.Njuskalo
             queryParams["numberOfRooms[min]"] = "two-rooms"; //2 sobe
             queryParams["numberOfRooms[max]"] = "two-rooms"; //2 sobe
 
-            var scraper = new NjuskaloScraper(client, logger, "iznajmljivanje-stanova", queryParams, true);
+            var options = new NjuskaloScraperOptions
+            {
+                Name = "NjuskaloDvosobniScraper",
+                BaseUrl = "https://www.njuskalo.hr",
+                PathSegment = "iznajmljivanje-stanova",
+                QueryParams = queryParams,
+            };
+            var scraper = new NjuskaloScraper(Options.Create(options), client, logger);
             return scraper;
         }
 
@@ -27,7 +35,14 @@ namespace Library.Njuskalo
             queryParams["numberOfRooms[min]"] = "three-rooms"; //3 sobe
             queryParams["numberOfRooms[max]"] = "three-rooms"; //3 sobe
 
-            var scraper = new NjuskaloScraper(client, logger, "iznajmljivanje-stanova", queryParams, true);
+            var options = new NjuskaloScraperOptions
+            {
+                Name = "NjuskaloTrosobniScraper",
+                BaseUrl = "https://www.njuskalo.hr",
+                PathSegment = "iznajmljivanje-stanova",
+                QueryParams = queryParams,
+            };
+            var scraper = new NjuskaloScraper(Options.Create(options), client, logger);
             return scraper;
         }
         public static NjuskaloScraper CreateNjuskaloCetverosobniScraper(HttpClient client, ILogger logger)
@@ -40,7 +55,14 @@ namespace Library.Njuskalo
             queryParams["numberOfRooms[min]"] = "four-rooms"; //4 sobe
             queryParams["numberOfRooms[max]"] = "four-rooms"; //4 sobe
 
-            var scraper = new NjuskaloScraper(client, logger, "iznajmljivanje-stanova", queryParams, true);
+            var options = new NjuskaloScraperOptions
+            {
+                Name = "NjuskaloCetverosobniScraper",
+                BaseUrl = "https://www.njuskalo.hr",
+                PathSegment = "iznajmljivanje-stanova",
+                QueryParams = queryParams,
+            };
+            var scraper = new NjuskaloScraper(Options.Create(options), client, logger);
             return scraper;
         }
 
@@ -55,7 +77,14 @@ namespace Library.Njuskalo
             queryParams["numberOfRooms[max]"] = "two-rooms"; //2 sobe
             queryParams["livingArea[min]"] = "60"; //min 60 kvadrata
 
-            var scraper = new NjuskaloScraper(client, logger, "iznajmljivanje-stanova", queryParams, true);
+            var options = new NjuskaloScraperOptions
+            {
+                Name = "DvosobniMin50KvadrataScraper",
+                BaseUrl = "https://www.njuskalo.hr",
+                PathSegment = "iznajmljivanje-stanova",
+                QueryParams = queryParams,
+            };
+            var scraper = new NjuskaloScraper(Options.Create(options), client, logger);
             return scraper;
         }
 
@@ -68,7 +97,14 @@ namespace Library.Njuskalo
             queryParams["includeOtherCategories"] = "1"; //Prikaži i luksuzne stanove
             queryParams["numberOfRooms[min]"] = "three-rooms"; //3 soba
 
-            var scraper = new NjuskaloScraper(client, logger, "iznajmljivanje-stanova", queryParams, true);
+            var options = new NjuskaloScraperOptions
+            {
+                Name = "NjuskaloMinimalnoTrosobniScraper",
+                BaseUrl = "https://www.njuskalo.hr",
+                PathSegment = "iznajmljivanje-stanova",
+                QueryParams = queryParams,
+            };
+            var scraper = new NjuskaloScraper(Options.Create(options), client, logger);
             return scraper;
         }
     }
