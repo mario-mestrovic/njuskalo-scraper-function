@@ -105,7 +105,8 @@ namespace Njuskalo.App.Function
                 Name = scraperOptionArray[0],
                 BaseUrl = scraperOptionArray[1],
                 PathSegment = scraperOptionArray[2],
-                QueryParams = dictionary
+                QueryParams = dictionary,
+                ScrapeAllPages = true
             };
 
             return njuskaloScraperOptions;
