@@ -43,6 +43,8 @@ namespace Njuskalo.App.Function
         {
             using (var client = new HttpClient())
             {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36 OPR/63.0.3368.71");
+
                 var logger = new DelegateLogger(log);
                 var emailSender = new SendgridMailSender(Options.Create(sendgridMailSenderOptions));
                 var notifier = new NjuskaloNotifier(Options.Create(njuskaloNotifierOptions), emailSender);
